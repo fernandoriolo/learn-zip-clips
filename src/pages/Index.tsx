@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTutorials } from "@/hooks/useTutorials";
 
 const Index = () => {
-  const { tutorials, addTutorial } = useTutorials();
+  const { tutorials, addTutorial, loading } = useTutorials();
   const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -92,7 +92,11 @@ const Index = () => {
         </div>
 
         {/* Tutorials Grid */}
-        {filteredTutorials.length > 0 ? (
+        {loading ? (
+          <div className="py-16 text-center">
+            <p className="text-lg text-muted-foreground">Carregando tutoriais...</p>
+          </div>
+        ) : filteredTutorials.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredTutorials.map((tutorial) => (
               <TutorialCard

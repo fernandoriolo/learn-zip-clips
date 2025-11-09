@@ -7,11 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tutorial } from "@/components/TutorialCard";
 import { Upload, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UploadTutorialFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (tutorial: Tutorial) => void;
+  onSubmit: (tutorial: Omit<Tutorial, 'id'>) => Promise<void>;
 }
 
 export const UploadTutorialForm = ({ open, onOpenChange, onSubmit }: UploadTutorialFormProps) => {
@@ -29,23 +30,68 @@ export const UploadTutorialForm = ({ open, onOpenChange, onSubmit }: UploadTutor
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!videoFile || !zipFile) {
+      toast({
+        title: "Arquivos obrigatórios",
+        description: "Por favor, selecione os arquivos de vídeo e ZIP.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Converter arquivos para URLs
-      const videoUrl = videoFile ? URL.createObjectURL(videoFile) : "";
-      const zipUrl = zipFile ? URL.createObjectURL(zipFile) : "";
-      const thumbnail = thumbnailFile ? URL.createObjectURL(thumbnailFile) : "https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=800&q=80";
+      // Upload video file
+      const videoFileName = `${Date.now()}-${videoFile.name}`;
+      const { data: videoData, error: videoError } = await supabase.storage
+        .from('videos')
+        .upload(videoFileName, videoFile);
 
-      const tutorial: Tutorial = {
-        id: Date.now().toString(),
+      if (videoError) throw videoError;
+
+      const { data: { publicUrl: videoUrl } } = supabase.storage
+        .from('videos')
+        .getPublicUrl(videoFileName);
+
+      // Upload zip file
+      const zipFileName = `${Date.now()}-${zipFile.name}`;
+      const { data: zipData, error: zipError } = await supabase.storage
+        .from('zip-files')
+        .upload(zipFileName, zipFile);
+
+      if (zipError) throw zipError;
+
+      const { data: { publicUrl: zipUrl } } = supabase.storage
+        .from('zip-files')
+        .getPublicUrl(zipFileName);
+
+      // Upload thumbnail if provided
+      let thumbnailUrl = "https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=800&q=80";
+      if (thumbnailFile) {
+        const thumbnailFileName = `${Date.now()}-${thumbnailFile.name}`;
+        const { data: thumbnailData, error: thumbnailError } = await supabase.storage
+          .from('thumbnails')
+          .upload(thumbnailFileName, thumbnailFile);
+
+        if (thumbnailError) throw thumbnailError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('thumbnails')
+          .getPublicUrl(thumbnailFileName);
+        
+        thumbnailUrl = publicUrl;
+      }
+
+      const tutorial: Omit<Tutorial, 'id'> = {
         ...formData,
         videoUrl,
         zipUrl,
-        thumbnail
+        thumbnail: thumbnailUrl
       };
 
-      onSubmit(tutorial);
+      await onSubmit(tutorial);
       
       toast({
         title: "Tutorial adicionado!",
@@ -59,9 +105,10 @@ export const UploadTutorialForm = ({ open, onOpenChange, onSubmit }: UploadTutor
       setThumbnailFile(null);
       onOpenChange(false);
     } catch (error) {
+      console.error('Upload error:', error);
       toast({
         title: "Erro ao adicionar tutorial",
-        description: "Tente novamente.",
+        description: error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive"
       });
     } finally {
