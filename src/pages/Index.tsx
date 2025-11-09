@@ -1,52 +1,23 @@
 import { useState } from "react";
 import { TutorialCard, Tutorial } from "@/components/TutorialCard";
 import { VideoPlayer } from "@/components/VideoPlayer";
+import { UploadTutorialForm } from "@/components/UploadTutorialForm";
 import { Input } from "@/components/ui/input";
-import { Search, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, BookOpen, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-// Dados de exemplo - depois você pode substituir por dados reais
-const mockTutorials: Tutorial[] = [
-  {
-    id: "1",
-    title: "Introdução ao React",
-    description: "Aprenda os fundamentos do React e como criar seu primeiro componente.",
-    category: "Frontend",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    zipUrl: "#",
-    thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80",
-    duration: "12:30"
-  },
-  {
-    id: "2",
-    title: "TypeScript Avançado",
-    description: "Domine os recursos avançados do TypeScript para escrever código mais seguro.",
-    category: "TypeScript",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    zipUrl: "#",
-    thumbnail: "https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=800&q=80",
-    duration: "18:45"
-  },
-  {
-    id: "3",
-    title: "Design System com Tailwind",
-    description: "Crie sistemas de design escaláveis usando Tailwind CSS e componentes reutilizáveis.",
-    category: "Design",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    zipUrl: "#",
-    thumbnail: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80",
-    duration: "25:15"
-  }
-];
+import { useTutorials } from "@/hooks/useTutorials";
 
 const Index = () => {
+  const { tutorials, addTutorial } = useTutorials();
   const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showUploadForm, setShowUploadForm] = useState(false);
 
-  const categories = Array.from(new Set(mockTutorials.map(t => t.category)));
+  const categories = Array.from(new Set(tutorials.map(t => t.category)));
 
-  const filteredTutorials = mockTutorials.filter(tutorial => {
+  const filteredTutorials = tutorials.filter(tutorial => {
     const matchesSearch = tutorial.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          tutorial.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || tutorial.category === selectedCategory;
@@ -58,14 +29,20 @@ const Index = () => {
       {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--gradient-primary)]">
-              <BookOpen className="h-6 w-6 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--gradient-primary)]">
+                <BookOpen className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Tutorial Hub</h1>
+                <p className="text-sm text-muted-foreground">Aprenda no seu ritmo</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Tutorial Hub</h1>
-              <p className="text-sm text-muted-foreground">Aprenda no seu ritmo</p>
-            </div>
+            <Button onClick={() => setShowUploadForm(true)} size="lg">
+              <Plus className="mr-2 h-5 w-5" />
+              Adicionar Tutorial
+            </Button>
           </div>
         </div>
       </header>
@@ -139,6 +116,13 @@ const Index = () => {
         tutorial={selectedTutorial}
         open={selectedTutorial !== null}
         onOpenChange={(open) => !open && setSelectedTutorial(null)}
+      />
+
+      {/* Upload Form Modal */}
+      <UploadTutorialForm
+        open={showUploadForm}
+        onOpenChange={setShowUploadForm}
+        onSubmit={addTutorial}
       />
     </div>
   );
