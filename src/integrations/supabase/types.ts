@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      conexao: {
+        Row: {
+          created_at: string
+          id: number
+          teste: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          teste?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          teste?: string | null
+        }
+        Relationships: []
+      }
       tutorials: {
         Row: {
           category: string
