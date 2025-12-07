@@ -24,17 +24,16 @@ export const UploadTutorialForm = ({ open, onOpenChange, onSubmit }: UploadTutor
     category: "",
     duration: ""
   });
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [zipFile, setZipFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!videoFile || !zipFile) {
+    if (!file) {
       toast({
-        title: "Arquivos obrigatórios",
-        description: "Por favor, selecione os arquivos de vídeo e ZIP.",
+        title: "Arquivo obrigatório",
+        description: "Por favor, selecione um arquivo.",
         variant: "destructive"
       });
       return;
@@ -43,29 +42,17 @@ export const UploadTutorialForm = ({ open, onOpenChange, onSubmit }: UploadTutor
     setLoading(true);
 
     try {
-      // Upload video file
-      const videoFileName = `${Date.now()}-${videoFile.name}`;
-      const { data: videoData, error: videoError } = await supabase.storage
+      // Upload file
+      const fileName = `${Date.now()}-${file.name}`;
+      const { error: fileError } = await supabase.storage
         .from('videos')
-        .upload(videoFileName, videoFile);
+        .upload(fileName, file);
 
-      if (videoError) throw videoError;
+      if (fileError) throw fileError;
 
-      const { data: { publicUrl: videoUrl } } = supabase.storage
+      const { data: { publicUrl: fileUrl } } = supabase.storage
         .from('videos')
-        .getPublicUrl(videoFileName);
-
-      // Upload zip file
-      const zipFileName = `${Date.now()}-${zipFile.name}`;
-      const { data: zipData, error: zipError } = await supabase.storage
-        .from('zip-files')
-        .upload(zipFileName, zipFile);
-
-      if (zipError) throw zipError;
-
-      const { data: { publicUrl: zipUrl } } = supabase.storage
-        .from('zip-files')
-        .getPublicUrl(zipFileName);
+        .getPublicUrl(fileName);
 
       // Upload thumbnail if provided
       let thumbnailUrl = "https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=800&q=80";
@@ -86,8 +73,8 @@ export const UploadTutorialForm = ({ open, onOpenChange, onSubmit }: UploadTutor
 
       const tutorial: Omit<Tutorial, 'id'> = {
         ...formData,
-        videoUrl,
-        zipUrl,
+        videoUrl: fileUrl,
+        zipUrl: "",
         thumbnail: thumbnailUrl
       };
 
@@ -100,8 +87,7 @@ export const UploadTutorialForm = ({ open, onOpenChange, onSubmit }: UploadTutor
 
       // Reset form
       setFormData({ title: "", description: "", category: "", duration: "" });
-      setVideoFile(null);
-      setZipFile(null);
+      setFile(null);
       setThumbnailFile(null);
       onOpenChange(false);
     } catch (error) {
@@ -172,24 +158,12 @@ export const UploadTutorialForm = ({ open, onOpenChange, onSubmit }: UploadTutor
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="video">Vídeo * (MP4, WebM)</Label>
+            <Label htmlFor="file">Arquivo *</Label>
             <Input
-              id="video"
+              id="file"
               type="file"
-              accept="video/*"
               required
-              onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="zip">Arquivo ZIP * (arquivos do projeto)</Label>
-            <Input
-              id="zip"
-              type="file"
-              accept=".zip"
-              required
-              onChange={(e) => setZipFile(e.target.files?.[0] || null)}
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
             />
           </div>
 
